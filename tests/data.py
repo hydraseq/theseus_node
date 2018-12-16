@@ -148,3 +148,9 @@ news = [
     "content": "null"
   }
 ]
+
+def get_usable_text(obj):
+    """Get usable text for news format above"""
+    tags = ['description','content', 'author', 'title']
+    return [word.lower() for tag in tags for word in obj[tag].split() if word != 'null']
+
