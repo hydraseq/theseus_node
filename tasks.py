@@ -2,4 +2,4 @@ from invoke import task
 
 @task
 def tests(c):
-    c.run('python -vvx tests')
+    c.run('py.test -vvx tests')
