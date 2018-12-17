@@ -17,19 +17,20 @@ class Node():
 
     def get_frequencies(self, limit=10):
         total = sum(self.counter.values())
-        return {key:float(val)/total for key, val in self.counter.most_common(limit)}
+        return {key: float(val) / total for key, val in self.counter.most_common(limit)}
+
     def num_keys(self):
         return len(self.counter.keys())
     def keys_sorted_by_frequency(self, cutoff=100):
         return [key for key, _ in self.counter.most_common()][:cutoff]
 
-def create_xy_table(node1, node2, cutoff=100, ratio=20.0):
+def create_xy_table(node1, node2, cutoff1=100, cutoff2=100, ratio=20.0):
     assert node2.num_keys() >= node1.num_keys()
     keys1 = node1.keys_sorted_by_frequency()
     keys2 = node2.keys_sorted_by_frequency()
 
-    freq1 = node1.get_frequencies(limit=cutoff)
-    freq2 = node2.get_frequencies(limit=cutoff)
+    freq1 = node1.get_frequencies(limit=cutoff1)
+    freq2 = node2.get_frequencies(limit=cutoff2)
 
     x, y = [], []
     reversed(keys2)

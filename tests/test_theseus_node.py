@@ -28,6 +28,6 @@ def test_assert_xy_table():
     lenkeys = len(keys)
     assert len(x) == lenkeys
     assert len(y) == lenkeys
-    assert sorted(keys[:5]) == sorted(['Big Data', 'HBase', 'Java', 'Python', 'R'])
-    assert x[:3] == [0, 0, 0.14285714285714285]
-    assert y[:3] == [0.05970149253731343, 0.05970149253731343, 0.04477611940298507]
+    assert sorted(keys[:5]) == sorted(['Big Data', 'HBase', 'Hadoop', 'Java', 'Spark'])
+    assert x[:3] ==  [0.14285714285714285, 0.14285714285714285, 0.14285714285714285]
+    assert y[:3] == [0.029850746268656716, 0.04477611940298507, 0.04477611940298507]
