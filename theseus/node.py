@@ -25,7 +25,7 @@ class Node():
         return [key for key, _ in self.counter.most_common()][:cutoff]
 
 def create_xy_table(node1, node2, cutoff1=100, cutoff2=100, ratio=20.0):
-    assert node2.num_keys() >= node1.num_keys()
+    #assert node2.num_keys() >= node1.num_keys()
     keys1 = node1.keys_sorted_by_frequency()
     keys2 = node2.keys_sorted_by_frequency()
 
