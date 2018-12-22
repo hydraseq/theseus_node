@@ -24,6 +24,7 @@ class Node():
     def keys_sorted_by_frequency(self, cutoff=100):
         return [key for key, _ in self.counter.most_common()][:cutoff]
 
+
 def create_xy_table(node1, node2, cutoff1=100, cutoff2=100, ratio=20.0):
     #assert node2.num_keys() >= node1.num_keys()
     keys1 = node1.keys_sorted_by_frequency()
@@ -44,6 +45,21 @@ def create_xy_table(node1, node2, cutoff1=100, cutoff2=100, ratio=20.0):
             final_keys.append(key)
 
     return x, y, final_keys
+
+def create_filter(node_x, node_y, ratio=0.5):
+    x, y, keys = create_xy_table(node_x, node_y, cutoff1=100, cutoff2=100, ratio=ratio)
+    filter = [row[0] for row in zip(keys, zip(x, y))]
+    return filter
+
+def count_hits(group, fil, cutoff, depth):
+    area = fil[:depth]
+    total = len(group)
+
+    hits = sum([1 for sentence in group if len([1 for w in sentence if w in area]) >= cutoff])
+    perc = round(float(hits)/total*100, 2)
+    return hits, perc
+
+
 
 ####################################################################################
 #  Visualization.  Might want to move this to own file with helpers
