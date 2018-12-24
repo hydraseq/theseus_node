@@ -1,3 +1,4 @@
+# Sample data from Data Science From Scratch
 documents = [
         ["Hadoop", "Big Data", "HBase", "Java", "Spark", "Storm", "Cassandra"],
         ["NoSQL", "MongoDB", "Cassandra", "HBase", "Postgres"],
@@ -16,6 +17,7 @@ documents = [
         ["libsvm", "regression", "support vector machines"]
     ]
 
+# format from news api
 news = [
   {
     "source": {

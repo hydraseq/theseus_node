@@ -24,10 +24,23 @@ def test_assert_xy_table():
     background = theseus.Node(data.documents)
     first = theseus.Node(data.documents[:1])
 
-    x, y, keys = theseus.node.create_xy_table(first, background)
+    x, y, keys = first.create_xy_table(background)
     lenkeys = len(keys)
     assert len(x) == lenkeys
     assert len(y) == lenkeys
     assert sorted(keys[:5]) == sorted(['Big Data', 'HBase', 'Hadoop', 'Java', 'Spark'])
     assert x[:3] ==  [0.14285714285714285, 0.14285714285714285, 0.14285714285714285]
     assert y[:3] == [0.029850746268656716, 0.04477611940298507, 0.04477611940298507]
+
+
+
+
+
+def test_visualize():
+    background = theseus.Node(data.documents)
+    first = theseus.Node(data.documents[:1], name='tests/output/theseus')
+
+    first.visualize(background, magnification=3.0, viz=False)
+
+def test_visualize_with_spam_data():
+    pass
