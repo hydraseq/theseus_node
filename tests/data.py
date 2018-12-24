@@ -17,6 +17,18 @@ documents = [
         ["libsvm", "regression", "support vector machines"]
     ]
 
+
+# This function loads the files at tests/data
+def load_per_line_file(path_file):
+    documents = []
+    with open(path_file, 'rb') as source:
+        for line in source:
+            try:
+                documents.append(line.decode('utf-8').lower().strip().split()[1:])
+            except:
+                continue
+    return documents
+
 # format from news api
 news = [
   {

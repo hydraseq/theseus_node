@@ -8,6 +8,8 @@ class Node():
         self.load(documents)
         self.profile = []
         self.name = name
+        self.cutoff = 100
+        self.depth = 100
 
     def load(self, documents):
         assert (isinstance(documents, list) and isinstance(documents[0], list))
@@ -27,8 +29,8 @@ class Node():
 
     def create_profile(self, node_y, ratio=0.5):
         x, y, keys = self.create_xy_table(node_y, cutoff=100, ratio=ratio)
-        profile = [row[0] for row in zip(keys, zip(x, y))]
-        return profile
+        self.profile = [row[0] for row in zip(keys, zip(x, y))]
+        return self.profile
 
     def create_xy_table(self, node2, cutoff=100, ratio=20.0):
         keys1 = self.keys_sorted_by_frequency(cutoff=cutoff)
@@ -67,10 +69,10 @@ class Node():
             name = self.name if self.name else 'anon'
             plt.savefig(name)
 
-    def activate(self, inputs, cutoff, use_depth):
-        area = self.profile[:use_depth]
+    def predict(self, inputs):
+        area = self.profile[:self.depth]
         hits = len(set(inputs) & set(area))
-        return hits >= cutoff
+        return hits >= self.cutoff
 
 
 
