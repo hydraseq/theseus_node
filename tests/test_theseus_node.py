@@ -86,8 +86,14 @@ def test_visualize():
     first.visualize(background, magnification=3.0, viz=False)
 
 def test_predict():
+    """The graph shows the cutoff used, or 'angle' first.  Then the list that follows
+        is the number of sentences from target group which are considered classified True
+        for the cutoff ranging from 0 to 12
+        At depth 0 everything matches since the cutoff is 0, meaning even no words matches.
+    """
     node_spam.depth = 100
-    tests = [
+    # spam node versus ham node, looking at spam sentences
+    tests = [ # number of required for a 'hit' ->
         [0.2, [498, 309, 164, 82, 42, 19, 3, 1, 1, 1, 1, 0]],
         [0.3, [498, 312, 169, 84, 45, 19, 7, 1, 1, 1, 1, 1]],
         [0.4, [498, 326, 188, 103, 49, 23, 7, 1, 1, 1, 1, 1]],
@@ -99,7 +105,6 @@ def test_predict():
         [1.0, [498, 380, 250, 157, 87, 31, 15, 4, 1, 1, 1, 1]],
         [1.1, [498, 382, 256, 159, 92, 33, 15, 4, 1, 1, 1, 1]],
     ]
-
     for ratio, hit_list in tests:
         node_spam.create_profile(node_ham, ratio=ratio)
         hits = []
@@ -108,6 +113,7 @@ def test_predict():
             hits.append(sum([1 for sentence in spam if node_spam.predict(sentence)]))
         assert hits == hit_list
 
+    # spam node versis ham node, looking at ham sentences
     tests2 = [
         [0.2, [3024, 292, 31, 3, 1, 0, 0, 0, 0, 0, 0, 0]],
         [0.3, [3024, 316, 35, 3, 1, 0, 0, 0, 0, 0, 0, 0]],
