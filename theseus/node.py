@@ -6,6 +6,7 @@ class Node():
         self.__dict__ = { 'perfil': None}
         self.counter = Counter()
         self.load(documents)
+        self.documents = documents
         self.profile = []
         self.name = name
         self.cutoff = 100
@@ -74,5 +75,58 @@ class Node():
         hits = len(set(inputs) & set(area))
         return hits >= self.cutoff
 
+    def __repr__(self):
+        return "<"+self.name+" profile-len: "+str(len(self.profile))+">"
 
 
+from collections import defaultdict
+import csv
+class Theseus:
+    def __init__(self, table_csv=None, headers=True, target_col=-1, amorphous=False):
+        """Generate nodes and implement helper functions to classify based on Theseus Nodes
+            table_csv: path to a file containing data in csv format
+            headers:   bool, use table headers as features in combination with values
+            target_col: int, which column has the target values
+            amorphous: bool, if True, assume each vertical is a feature, otherwise it's a word soup
+        """
+        self.target_col = target_col
+        features = defaultdict(list)
+
+        with open(table_csv, 'r') as fhandle:
+            source = csv.DictReader(fhandle) if headers else fhandle
+            for line in source:
+                features[line[target_col]].append([str(key)+'-'+str(value) for key, value in line.items() if key != target_col])
+
+        self.nodes = {name: Node(documents=documents, name=name) for name, documents in features.items()}
+        docs = []
+        [docs.extend(node.documents) for _, node in self.nodes.items()]
+        self.nodes['background'] = Node(documents=docs, name="background")
+
+    def build_up_nodes(self, ratio=0.2):
+        for _, node in self.nodes.items():
+            docs = []
+            [docs.extend(n.documents) for k, n in self.nodes.items() if n != node.name]
+            node.create_profile(Node(documents=docs), ratio=ratio)
+        for key, node in self.nodes.items():
+            print(key, node.profile)
+        return self
+
+    def viz_all(self):
+        # TODO: can include the label as key to id the graphs
+        for key, node in self.nodes.items():
+            if key == 'background':
+                continue
+            node.visualize(self.nodes['background'], cutoff=100, magnification=10)
+
+    def classify(self, s, cutoff=2):
+        labels = []
+        for _key, _node in self.nodes.items():
+            if _key == 'background':
+                continue
+            _node.cutoff = cutoff
+            if _node.predict(s):
+                labels.append(_key)
+        return labels
+
+    def __repr__(self):
+        return "<#nodes: "+str(len(self.nodes))+" nodes: "+str(self.nodes)+">"
