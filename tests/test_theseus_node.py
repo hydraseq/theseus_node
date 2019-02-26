@@ -1,7 +1,7 @@
 import sys
 import os
 test_path = os.path.dirname(__file__)
-sys.path.append("/Users/niarfe/tmprepos/theseus_node/")
+sys.path.append(os.path.abspath(test_path+'/../'))
 import theseus
 import data
 
