@@ -1,9 +1,9 @@
 from collections import Counter
 import matplotlib.pyplot as plt
 
-class Node():
-    def __init__(self, documents=[], name=None):
-        self.__dict__ = { 'perfil': None}
+class Node:
+    def __init__(self, documents=[], name='anon'):
+        """documents is a file with one doc per line"""
         self.counter = Counter()
         self.load(documents)
         self.documents = documents
@@ -13,6 +13,7 @@ class Node():
         self.depth = 100
 
     def load(self, documents):
+        assert documents, "missing list of documents, text single doc per line"
         assert (isinstance(documents, list) and isinstance(documents[0], list))
         for document in documents:
             self.counter += Counter(document)

@@ -6,6 +6,7 @@ import theseus
 import data
 
 
+
 def test_theseus_node_smoke():
     thn = theseus.Node(data.documents)
     assert thn.counter.most_common(2) == [('Python', 4), ('R', 4)]
