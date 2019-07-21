@@ -1,10 +1,3 @@
-# theseus_node
-
-## Install
-pip install theseus
-
-## Sample usage
-```python
 import theseus as th
 import sys
 
@@ -31,4 +24,3 @@ n_casko.show_top(n_backg, cutoff=10, ratio=_ratio)
 print()
 print("The Raven against background")
 n_raven.show_top(n_backg, cutoff=10, ratio=_ratio)
-```

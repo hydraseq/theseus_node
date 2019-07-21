@@ -34,27 +34,22 @@ def test_assert_xy_table():
     assert y[:3] == [0.029850746268656716, 0.04477611940298507, 0.04477611940298507]
 
 
-spam = data.load_per_line_file('tests/data/spam.txt')
+data_root = 'tests/data/spam_example/'
+spam = data.load_per_line_file(data_root+'spam.txt')
 node_spam = theseus.Node(spam)
 
-easy_ham = data.load_per_line_file('tests/data/easy_ham.txt')
-hard_ham = data.load_per_line_file('tests/data/hard_ham.txt')
+easy_ham = data.load_per_line_file(data_root+'easy_ham.txt')
+hard_ham = data.load_per_line_file(data_root+'hard_ham.txt')
 ham = easy_ham + hard_ham
 node_ham = theseus.Node(ham)
 
 def test_load_single_line_data():
-    spam = data.load_per_line_file('tests/data/spam.txt')
 
     assert len(spam) == 498
     assert isinstance(spam, list)
     assert isinstance(spam[0], list)
     assert isinstance(spam[0][0], str)
 
-    node_spam = theseus.Node(spam)
-
-    easy_ham = data.load_per_line_file('tests/data/easy_ham.txt')
-    hard_ham = data.load_per_line_file('tests/data/hard_ham.txt')
-    ham = easy_ham + hard_ham
     assert len(ham) == (2741 + 283)
     assert isinstance(spam, list)
     assert isinstance(spam[0], list)

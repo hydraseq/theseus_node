@@ -1,40 +1,87 @@
 from collections import Counter
 import matplotlib.pyplot as plt
+import re
+
+def default_tokenizer(txt):
+    txt = re.sub(r'[^\w]', ' ', txt)
+    txt = re.sub(r'_', ' ', txt)
+    txt_compact = re.sub(r'\s+', ' ', txt)
+    txt_compact_lower = txt_compact.lower()
+    return txt_compact_lower.split()
 
 class Node:
-    def __init__(self, documents=[], name='anon'):
-        """documents is a file with one doc per line"""
+    """Encapsulates a counter object to track count, and calculate frequency of words in a set of docs"""
+    def __init__(self, documents=[[]], name='anon'):
+        """
+        Args:
+            documents, list<list<str>> list of list, where eas sublist is a document
+        """
         self.counter = Counter()
+        self.documents = documents[:]
         self.load(documents)
-        self.documents = documents
         self.profile = []
         self.name = name
         self.cutoff = 100
         self.depth = 100
 
-    def load(self, documents):
+    def load(self, documents, uniquify=False):
+        """Load a list of list of words directly"""
         assert documents, "missing list of documents, text single doc per line"
-        assert (isinstance(documents, list) and isinstance(documents[0], list))
+        assert isinstance(documents, list), "documents must be list of lists"
+        assert isinstance(documents[0], list), "documents must be list of lists"
+       
+        def _get_new_counts(document):
+            return Counter(document) if not uniquify else Counter(list(set(document)))
+
         for document in documents:
-            self.counter += Counter(document)
+            self.counter += _get_new_counts(document)
         return self
 
+    def load_file(self, fpath, tokenizer=None, uniquify=False):
+        """
+        Load from text file, assuming each line is a document.  If no tokenizer is passed
+        a default tokenizer will be used to remove all except alphanumerics
+        """
+        assert isinstance(fpath, str), "fpath must be type str not {}".format(type(fpath))
+        tokenizer = default_tokenizer if tokenizer == None else tokenizer
+        
+        docs = [tokenizer(line) for line in open(fpath, 'r')]
+
+        self.documents.extend(docs)
+        
+        self.load(docs, uniquify)
+
     def get_frequencies(self, limit=10):
+        """Get the hightest frequency words"""
         total = sum(self.counter.values())
         return {key: float(val) / total for key, val in self.counter.most_common(limit)}
 
     def num_keys(self):
+        """How many words are there"""
         return len(self.counter.keys())
 
     def keys_sorted_by_frequency(self, cutoff=100):
+        """return the highest rated frequency words"""
         return [key for key, _ in self.counter.most_common()][:cutoff]
 
     def create_profile(self, node_y, ratio=0.5):
+        """Build the profile for this node against another.
+        This node is along the x axis, while the other will be the y axis.
+        The ratio is used to determine the cutoff of words.
+        Return a list of top 100 highest to lowet rated words and their freqeuncies for x,y
+        """
         x, y, keys = self.create_xy_table(node_y, cutoff=100, ratio=ratio)
         self.profile = [row[0] for row in zip(keys, zip(x, y))]
         return self.profile
 
     def create_xy_table(self, node2, cutoff=100, ratio=20.0):
+        """This creates the raw comparison between two nodes.
+        Creates a 'table' consisting of three columns.
+        x-frequency
+        y-frequency
+        word
+        Returns three lists for each of them in descending order
+        """
         keys1 = self.keys_sorted_by_frequency(cutoff=cutoff)
         keys2 = node2.keys_sorted_by_frequency(cutoff=cutoff)
 
@@ -51,7 +98,22 @@ class Node:
                 final_keys.append(key)
         return x, y, final_keys
 
+    def show_top(self, node2, cutoff=20, ratio=0.5):
+        x, y, keys = self.create_xy_table(node2, ratio=ratio)
+        
+        with open(self.name+'.csv', 'w') as target:
+            for x,y,word in zip(x,y,keys):
+                target.write("{},{},{}\n".format(str(x),str(y),word))
+                print("%.4f" % x,"%.4f" % y,word)
+                cutoff -= 1
+                if cutoff <= 0:
+                    break
+
     def visualize(self, background, num_labeled=10, magnification=1.0, viz=True, cutoff=100):
+        """create a scatter plot of this node against the background node
+        If viz=False, a jpg is saved to disk instead.
+        """
+        
         assert magnification >= 1.0
         lst_x, lst_y, keys = self.create_xy_table(background, cutoff=cutoff)
         fig, ax = plt.subplots()
@@ -72,6 +134,10 @@ class Node:
             plt.savefig(name)
 
     def predict(self, inputs):
+        """Given a set of words (inputs), use the profile to count the overlap
+        if the overlap is above threshold, consider this a positive match.
+        IMPORTANT: use create_profile first to generate the list using an opposing node
+        and an angle cutoff first to create a self profile"""
         area = self.profile[:self.depth]
         hits = len(set(inputs) & set(area))
         return hits >= self.cutoff
