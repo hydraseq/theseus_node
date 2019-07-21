@@ -3,3 +3,4 @@ __version__ = "0.0.2"
 
 from theseus.node import Node
 from theseus.node import Theseus
+from theseus.node import default_tokenizer

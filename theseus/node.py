@@ -1,12 +1,20 @@
 from collections import Counter
 import matplotlib.pyplot as plt
+import re
+
+def default_tokenizer(txt):
+    txt = re.sub(r'[^\w]', ' ', txt)
+    txt = re.sub(r'_', ' ', txt)
+    txt_compact = re.sub(r'\s+', ' ', txt)
+    txt_compact_lower = txt_compact.lower()
+    return txt_compact_lower.split()
 
 class Node:
-    def __init__(self, documents=[], name='anon'):
+    def __init__(self, documents=[[]], name='anon'):
         """documents is a file with one doc per line"""
         self.counter = Counter()
+        self.documents = documents[:]
         self.load(documents)
-        self.documents = documents
         self.profile = []
         self.name = name
         self.cutoff = 100
@@ -18,6 +26,16 @@ class Node:
         for document in documents:
             self.counter += Counter(document)
         return self
+
+    def load_file(self, fpath, tokenizer=None):
+        assert isinstance(fpath, str), "fpath must be a string not {}".format(type(fpath))
+        tokenizer = default_tokenizer if tokenizer == None else tokenizer
+        docs = []
+        with open(fpath, 'r') as source:
+            for line in source:
+                docs.append(tokenizer(line))
+        self.documents.extend(docs)
+        self.load(docs)
 
     def get_frequencies(self, limit=10):
         total = sum(self.counter.values())
