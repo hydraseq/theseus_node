@@ -150,35 +150,40 @@ class WordFrequncySpark:
 
     def flag_word_in_doc(self, data, word_list):
         @typed_udf(tps.IntegerType())
-        def count_given_words_for_single_row(sentence, word_list_str):
+        def find_given_words_for_single_row_set(sentence, word_list_str):
             word_list = word_list_str.split(',')
-            all_word_count = 0
-            sentence_word_count_dict = dict(Counter(sentence))
-            
+            if len(set(word_list) & set(sentence)) == 0:
+                return 0
+            else:
+                return 1
+
+        @typed_udf(tps.IntegerType())
+        def find_given_words_for_single_row_loop(sentence, word_list_str):
+            word_list = word_list_str.split(',')
+            match_word = 0
             for word in word_list:
-                try:
-                    all_word_count += sentence_word_count_dict[word]
-                except:
-                    continue
-            return all_word_count
+                if word in sentence:
+                    match_word = 1
+                    break
+            return match_word
 
 
         print('=== counting word count for 1-star and 2-setar reviews given word list')
         word_list_str = ','.join(word_list)
-        data = data.withColumn('flag_word_count', fn.when(fn.col('stars')>2, 0).\
-                                        otherwise(count_given_words_for_single_row(fn.col('text_list'), fn.lit(word_list_str))))
+        data = data.withColumn('flag_word', fn.when(fn.col('stars')>2, 0).\
+                                        otherwise(find_given_words_for_single_row_set(fn.col('text_list'), fn.lit(word_list_str))))
 
-        print('=== aggregating flag_word_count to biz level')
+        print('=== aggregating flag_word to biz level')
         data_agg = data.groupBy(['id','name', 'segments'])\
-                       .agg(fn.sum('flag_word_count').alias('flag_word_count_sum'), \
+                       .agg(fn.sum('flag_word').alias('flag_word_sum'), \
                             fn.count('stars').alias('total_review_count'), \
                             fn.count(fn.when(fn.col("stars") < 3, True)).alias('star_1_2_count'))
 
         print('=== calculating flag_word_ratio for each biz')
-        data_agg = data_agg.withColumn('flag_word_ratio', fn.col('flag_word_count_sum') / fn.col('total_review_count'))
+        data_agg = data_agg.withColumn('flag_word_ratio', fn.col('flag_word_sum') / fn.col('total_review_count'))
         data_agg = data_agg.orderBy('flag_word_ratio', ascending=False)
 
-        flag_word_count_agg = data_agg.groupBy('flag_word_count_sum').count().orderBy('flag_word_count_sum', ascending=True)
+        flag_word_count_agg = data_agg.groupBy('flag_word_sum').count().orderBy('flag_word_sum', ascending=True)
 
 
         return data_agg, flag_word_count_agg
