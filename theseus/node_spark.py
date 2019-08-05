@@ -22,10 +22,11 @@ spark = SparkSession \
     .getOrCreate()
 
 class WordFrequncySpark:
-    def __init__(self, pathIn, uniquify=True, segment='restaurant'):
+    def __init__(self, pathIn, uniquify=True, segment='restaurant', biz_min_review_count = 3):
         self.pathIn = pathIn
         self.uniquify = uniquify
         self.segment = segment
+        self.biz_min_review_count = biz_min_review_count
         self.clean_string_dict = {'lower_case': True, 'remove_number': True, 'remove_punctuation': True, 'stem': True,
                   'remove_stop_words': True, 'remove_whitespace': True, 'remove_all_whitespace': False}
         self.top_word_count = 20
@@ -43,14 +44,20 @@ class WordFrequncySpark:
         print('=== getting business name and segments')
         data = data.withColumn("name", fn.col("business").getField("name"))
         data = data.withColumn('segments', naics2segment(data.business.naics))
-        
+
+        print('=== getting is_closed')
+        data = data.withColumn("is_closed", fn.col("business").getField("is_closed"))
+
+        print('=== getting index scores')
+        data = data.withColumn('customer_review', fn.col('carpe_indexes').getField('customer_review').getField('score'))
+
         print('=== getting review content, stars')
         data = data.withColumn("content", fn.explode_outer(fn.col("reviews")))
         data = data.withColumn("text_raw", fn.col("content").getField("content"))
         data = data.withColumn("stars", fn.col("content").getField("stars"))
 
         print('=== cleaning data')
-        data = data.select(['id','name','text_raw','stars',"segments"])
+        data = data.select(['id','name','text_raw','stars',"segments", "is_closed","customer_review"])
         data = data.where(fn.col('segments') == self.segment)
         data = data.where(fn.col('text_raw').isNull() == False)
         data = data.where(fn.col('stars').isNull() == False)
@@ -157,6 +164,16 @@ class WordFrequncySpark:
             else:
                 return 1
 
+        @typed_udf(tps.StringType())
+        def find_given_words_for_single_row_set_return_flag_word(sentence, word_list_str):
+            word_list = word_list_str.split(',')
+            flag_word_list = list(set(word_list) & set(sentence))
+            if len(flag_word_list) == 0:
+                return 'None'
+            else:
+                return ','.join(flag_word_list)
+
+
         @typed_udf(tps.IntegerType())
         def find_given_words_for_single_row_loop(sentence, word_list_str):
             word_list = word_list_str.split(',')
@@ -174,19 +191,20 @@ class WordFrequncySpark:
                                         otherwise(find_given_words_for_single_row_set(fn.col('text_list'), fn.lit(word_list_str))))
 
         print('=== aggregating flag_word to biz level')
-        data_agg = data.groupBy(['id','name', 'segments'])\
+        data_agg = data.groupBy(['id','name', 'segments', 'is_closed','customer_review'])\
                        .agg(fn.sum('flag_word').alias('flag_word_sum'), \
                             fn.count('stars').alias('total_review_count'), \
                             fn.count(fn.when(fn.col("stars") < 3, True)).alias('star_1_2_count'))
+
+        print('=== removing biz has less than {} reviews'.format(biz_min_review_count))
+        data_agg = data_agg.where(fn.col('total_review_count') >= self.biz_min_review_count)
 
         print('=== calculating flag_word_ratio for each biz')
         data_agg = data_agg.withColumn('flag_word_ratio', fn.col('flag_word_sum') / fn.col('total_review_count'))
         data_agg = data_agg.orderBy('flag_word_ratio', ascending=False)
 
+        print('=== count biz flag word count')
         flag_word_count_agg = data_agg.groupBy('flag_word_sum').count().orderBy('flag_word_sum', ascending=True)
 
 
         return data_agg, flag_word_count_agg
-
-
-
