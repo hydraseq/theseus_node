@@ -129,3 +129,48 @@ def test_predict():
             node_spam.cutoff = cutoff
             hits.append(sum([1 for sentence in ham if node_spam.predict(sentence)]))
         assert hits == hit_list
+
+def test_not_uniqify():
+    """with no uniqify flag the xy tables are created as a fraction of per group.
+        i.e.
+            a a a a a a a a a a
+            b b b b b
+            c
+        would yeild 10a's, 5b's and 1 c.  For  total of 16 words.
+        Thus the a ratio is 10/16 = 0.625
+    """
+    data_root = 'tests/data/uniquify/'
+    background = 'background.txt'
+    back = theseus.Node()
+    back.load_file(data_root+background)
+    abc = theseus.Node()
+    abc.load_file(data_root+'abc.txt')
+
+    x, y, keys = abc.create_xy_table(back, ratio=0.1)
+    assert round(x[0], 3)    == 0.625
+    assert round(y[0], 3)    == 0.018
+    assert keys[0]           == 'a'
+
+def test_uniqify():
+    """with no uniqify flag the xy tables are created as a fraction of per group.
+        i.e.
+            a a a a a a a a a a
+            b b b b b
+            c
+        would yeild 10a's, 5b's and 1 c.  For  total of 16 words.
+        Thus the a ratio is 10/16 = 0.625
+    """
+    data_root = 'tests/data/uniquify/'
+    background = 'background.txt'
+    back = theseus.Node()
+    back.load_file(data_root+background, uniquify=True)
+    abc = theseus.Node()
+    abc.load_file(data_root+'abc.txt', uniquify=True)
+
+    x, y, keys = abc.create_xy_table(back, ratio=0.35)
+    for idx, point in enumerate(zip(x,y,keys)):
+        print(idx, point)
+
+    assert round(x[0], 3)    == 0.333
+    assert round(y[0], 3)    == 0.1
+    assert keys[0]           == 'a'
