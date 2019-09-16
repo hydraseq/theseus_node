@@ -64,14 +64,13 @@ class Node:
         """return the highest rated frequency words"""
         return [key for key, _ in self.counter.most_common()][:cutoff]
 
-    def create_profile(self, node_y, ratio=0.5):
+    def create_profile(self, node_y, cutoff=100, ratio=0.5):
         """Build the profile for this node against another.
         This node is along the x axis, while the other will be the y axis.
         The ratio is used to determine the cutoff of words.
         Return a list of top 100 highest to lowet rated words and their freqeuncies for x,y
         """
-        x, y, keys = self.create_xy_table(node_y, cutoff=100, ratio=ratio)
-        self.profile = [row[0] for row in zip(keys, zip(x, y))]
+        _, _, self.profile = self.create_xy_table(node_y, cutoff=100, ratio=ratio)
         return self.profile
 
     def create_xy_table(self, node2, cutoff=100, ratio=20.0):
@@ -83,13 +82,10 @@ class Node:
         Returns three lists for each of them in descending order
         """
         keys1 = self.keys_sorted_by_frequency(cutoff=cutoff)
-        keys2 = node2.keys_sorted_by_frequency(cutoff=cutoff)
-
         freq1 = self.get_frequencies(limit=cutoff)
         freq2 = node2.get_frequencies(limit=cutoff)
-        x, y = [], []
-        reversed(keys2)
-        final_keys = []
+
+        x, y, final_keys = [], [], []
         for key in keys1:
             f1, f2 = freq1.get(key, 0), freq2.get(key, 0)
             if f1 != 0 and f2/(f1 + 0.001) < ratio:
