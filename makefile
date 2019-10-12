@@ -1,4 +1,7 @@
-runtests:
+default:
+	cat makefile
+
+test:
 	py.test -v tests
 
 
