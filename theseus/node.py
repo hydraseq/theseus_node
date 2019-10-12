@@ -3,11 +3,7 @@ import matplotlib.pyplot as plt
 import re
 
 def default_tokenizer(txt):
-    txt = re.sub(r'[^\w]', ' ', txt)
-    txt = re.sub(r'_', ' ', txt)
-    txt_compact = re.sub(r'\s+', ' ', txt)
-    txt_compact_lower = txt_compact.lower()
-    return txt_compact_lower.split()
+    return txt.split()
 
 class Node:
     """Encapsulates a counter object to track count, and calculate frequency of words in a set of docs"""
@@ -17,7 +13,6 @@ class Node:
             documents, list<list<str>> list of list, where eas sublist is a document
         """
         self.counter = Counter()
-        self.documents = documents[:]
         self.load(documents)
         self.profile = []
         self.name = name
@@ -25,31 +20,56 @@ class Node:
         self.depth = 100
 
     def load(self, documents, uniquify=False):
-        """Load a list of list of words directly"""
-        assert documents, "missing list of documents, text single doc per line"
-        assert isinstance(documents, list), "documents must be list of lists"
-        assert isinstance(documents[0], list), "documents must be list of lists"
-       
+        """Load a list of list of words, already processed, directly"""
+        assert documents,                      "missing list of documents, text single doc per line"
+        assert isinstance(documents,    list), "documents must be list"
+        assert isinstance(documents[0], list), "each document is also a list"
+        #--------------------------------------------------------------------------------------------
+
         def _get_new_counts(document):
             return Counter(document) if not uniquify else Counter(list(set(document)))
 
-        for document in documents:
-            self.counter += _get_new_counts(document)
+        for idx, document in enumerate(documents):
+            new_counter = _get_new_counts(document)
+            self.counter.update(new_counter)
+            if idx % 1000 == 0:
+                print("load: {}\r".format(idx), end='')
         return self
 
     def load_file(self, fpath, tokenizer=None, uniquify=False):
-        """
-        Load from text file, assuming each line is a document.  If no tokenizer is passed
-        a default tokenizer will be used to remove all except alphanumerics
-        """
+        """Load a flat file, with one document per line, no header, no csv"""
         assert isinstance(fpath, str), "fpath must be type str not {}".format(type(fpath))
         tokenizer = default_tokenizer if tokenizer == None else tokenizer
-        
-        docs = [tokenizer(line) for line in open(fpath, 'r')]
+        #----------------------------------------------------------------------------------
 
-        self.documents.extend(docs)
-        
-        self.load(docs, uniquify)
+        with open(fpath, 'r') as source:
+            for idx, line in enumerate(source):
+                words = list(set(tokenizer(line))) if uniquify else tokenizer(line)
+                self.counter.update(words)
+                d = {k:v for k, v in self.counter.most_common(200)}
+                self.counter = Counter(d)
+                if idx % 1000 == 0:
+                    print(" '{}\r".format(idx), end="")
+        return self
+
+    def trim_counter(self, depth):
+        """Trim the counter member variable to only the top most common as per depth given"""
+        assert isinstance(depth, int), "Depth must be an integer"
+        #-------------------------------------------------------
+
+        d = { k:v for k, v in self.counter.most_common(depth) }
+        self.counter = Counter(d)
+        return self
+
+
+    def merge(self, node, depth=200):
+        """Merte the counds in this node with the given node"""
+        assert isinstance(node, Node), "Merge node must be type Node"
+        #------------------------------------------------------------
+
+        self.counter.update(node.counter)
+        self.trim_counter(depth)
+        return self
 
     def get_frequencies(self, limit=10):
         """Get the hightest frequency words"""
@@ -130,13 +150,23 @@ class Node:
             plt.savefig(name)
 
     def predict(self, inputs):
-        """Given a set of words (inputs), use the profile to count the overlap
-        if the overlap is above threshold, consider this a positive match.
-        IMPORTANT: use create_profile first to generate the list using an opposing node
-        and an angle cutoff first to create a self profile"""
+        """If intersect between self.profile and inputs is >= self.profile[:self.depth], return True"""
+        assert isinstance(inputs, list), "inputs must be a list of words"
+        assert self.profile, "predict: self.profile must be calculated before we can predict"
+        #-------------------------------------------------------------------------------
+
         area = self.profile[:self.depth]
         hits = len(set(inputs) & set(area))
         return hits >= self.cutoff
+
+    def serialize(self):
+        with open(self.name+'.py', 'w') as target:
+            target.write(str(dict(self.counter)))
+
+    def deserialize(self, fpath):
+        str_dict =  open(fpath, 'r').read()
+        self.counter = Counter(eval(str_dict))
+
 
     def __repr__(self):
         return "<"+self.name+" profile-len: "+str(len(self.profile))+">"
