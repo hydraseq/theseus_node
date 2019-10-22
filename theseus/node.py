@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import re
 
 def default_tokenizer(txt):
-    return txt.split()
+    txt = re.sub(r'[^\w]', ' ', txt)
+    return txt.lower().split()
 
 class Node:
     """Encapsulates a counter object to track count, and calculate frequency of words in a set of docs"""
